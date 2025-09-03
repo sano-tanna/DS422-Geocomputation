@@ -1,0 +1,65 @@
+---
+title: "DS400 Mini-Lab: Exploring mtcars"
+format: html
+editor: visual
+---
+
+```{r}
+library(here)
+library(tidyverse)
+```
+
+```{r}
+library(ggplot2)
+
+# Scatter plot with regression line
+ggplot(mtcars, aes(x = wt, y = mpg)) +
+  geom_point(color = "blue", size = 3) +  # blue points
+  geom_smooth(method = "lm", col = "red", se = FALSE, linetype = "solid") +
+  labs(title = "Scatter Plot of Weight vs MPG",
+       x = "Weight (1000 lbs)",
+       y = "Miles per Gallon") +
+  theme_minimal()
+
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(mtcars, aes(x = wt, y = mpg, color = as.factor(cyl))) +
+  geom_point(size = 3) +
+  labs(title = "Scatter Plot of Weight vs MPG",
+       x = "Weight (1000 lbs)",
+       y = "Miles per Gallon",
+       color = "Cylinders") +
+  theme_minimal()
+       title = "Cylinders")
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(mtcars, aes(x = mpg)) +
+  geom_histogram(binwidth = 2, fill = "skyblue", color = "black") +
+  labs(title = "Histogram of Miles per Gallon",
+       x = "Miles per Gallon",
+       y = "Frequency") +
+  theme_minimal()
+```
+
+```{r}
+mtcars_df <- mtcars %>%
+  separate(make_model, into = c("make", "model"), sep = " ", extra = "merge")
+
+head(mtcars_df)
+```
+
+```{r}
+ggplot(mtcars_df, aes(x = reorder(make, mpg, FUN = median), y = mpg)) +
+  geom_boxplot(outlier.shape = NA, fill = "lightgray") +   # boxplot
+  geom_jitter(width = 0.2, aes(color = make), size = 2) +  # jittered points
+  labs(title = "Miles per Gallon by Make",
+       x = "Make",
+       y = "Miles per Gallon") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) # rotate labels
+```
