@@ -67,7 +67,7 @@ On this website: <https://firms.modaps.eosdis.nasa.gov/usfs/active_fire/#firms-s
 -   Now you will be able to read the file in with the code below
 
 ```{r}
-wildfire_shp_data <- st_read(here("DS422/DS422/data/LANDSAT_USA_contiguous_and_Hawaii_7d/LANDSAT_USA_contiguous_and_Hawaii_7d.shp"))
+wildfire_shp_data <- st_read(here("data/LANDSAT_USA_contiguous_and_Hawaii_7d/LANDSAT_USA_contiguous_and_Hawaii_7d.shp"))
 ```
 
 This dataset contains point geometries where fires were detected. Important columns include:
