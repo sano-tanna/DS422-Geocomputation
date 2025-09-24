@@ -252,12 +252,10 @@ animate(
 -   The code below will unzip it, move it into a fire_kml file directory that contains a kml file that is readable in R
 
 ```{r}
-unzip("data/FirespotArea_LANDSAT_USA_contiguous_and_Hawaii_7d.kmz", exdir = "data/fire_kml")
+unzip(here("data/FirespotArea_LANDSAT_USA_contiguous_and_Hawaii_7d.kmz", exdir = "data/fire_kml"))
 
-wildfire_area_data <- st_read(
-  "data/fire_kml/LANDSAT_USA_contiguous_and_Hawaii_7d_1757462691416.kml",
-  layer = "30m Fire Detection Footprints (older than the last 24hrs) "
-)
+wildfire_area_data <- st_read(here("data/fire_kml/LANDSAT_USA_contiguous_and_Hawaii_7d_1757637915448.kml"),
+  layer = "30m Fire Detection Footprints (older than the last 24hrs) ")
 
 wildfire_area_data <- wildfire_area_data |>
   st_zm(drop = TRUE, what = "ZM") |>  # Remove Z/M dimension if present
@@ -284,6 +282,28 @@ Download the LANDSAT 30m CSV for USA (Conterminous) and Hawaii at the bottom rig
 -   Map the data with any package you would like, just make sure there is at least a slight difference from the examples above, be as creative as possible while utilizing your critical thinking
 
 ```{r}
+library(sf)
+library(leaflet)
+
+# Read CSV and convert to sf
+fires_df <- read.csv(here("data/LANDSAT_USA_contiguous_and_Hawaii_7d.csv"))
+fires_sf <- st_as_sf(fires_df, coords = c("longitude", "latitude"), crs = 4326)
+
+# Simple map
+leaflet(fires_sf) |>
+  addProviderTiles("CartoDB.Positron") |>
+  addCircleMarkers(
+    radius = 4,
+    color = ~ifelse(daynight == "D", "orange", "blue"),
+    fillOpacity = 0.7,
+    popup = ~paste("Date:", acq_date, "<br>Confidence:", confidence)
+  ) |>
+  addLegend(
+    position = "bottomright",
+    colors = c("orange", "blue"),
+    labels = c("Day", "Night"),
+    title = "Detection Time"
+  )
 
 ```
 
