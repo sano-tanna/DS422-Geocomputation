@@ -1,0 +1,105 @@
+---
+title: "Code for Map"
+format: html
+editor: visual
+---
+
+```{r}
+library(sf)
+library(dplyr)
+
+ag2015 <- st_read("data/agricultural_land_use_-_2015_baseline.geojson", quiet = TRUE)
+ag2020 <- st_read("data/agricultural_land_use_-_2020_update.geojson", quiet = TRUE)
+
+aea <- "+proj=aea +lat_1=8 +lat_2=18 +lon_0=-157 +datum=WGS84 +units=m +no_defs"
+ag15 <- st_transform(st_make_valid(ag2015), aea)
+ag20 <- st_transform(st_make_valid(ag2020), aea)
+
+to_ha <- 1/10000
+total15 <- sum(st_area(ag15)) * to_ha
+total20 <- sum(st_area(ag20)) * to_ha
+change  <- as.numeric(total20 - total15)
+pct     <- as.numeric(100 * change / total15)
+
+```
+
+```{r}
+library(sf); library(dplyr)
+
+a15 <- st_read("data/agricultural_land_use_-_2015_baseline.geojson", quiet=TRUE)
+a20 <- st_read("data/agricultural_land_use_-_2020_update.geojson", quiet=TRUE)
+
+f15 <- grep("crop|use|class", names(a15), ignore.case=TRUE, value=TRUE)[1]
+f20 <- grep("crop|use|class", names(a20), ignore.case=TRUE, value=TRUE)[1]
+
+crops15 <- a15 |> st_drop_geometry() |> distinct(.data[[f15]]) |> arrange(.data[[f15]])
+crops20 <- a20 |> st_drop_geometry() |> distinct(.data[[f20]]) |> arrange(.data[[f20]])
+
+print("2015 crop types:"); print(crops15)
+print("2020 crop types:"); print(crops20)
+
+```
+
+```{r}
+library(sf)
+library(dplyr)
+library(ggplot2)
+
+# use your objects
+a15 <- ag15
+a20 <- ag20
+
+# add area in hectares
+a15 <- a15 %>% mutate(area_ha = as.numeric(st_area(.)) / 10000)
+a20 <- a20 %>% mutate(area_ha = as.numeric(st_area(.)) / 10000)
+
+# rename crop columns to a common name to avoid typos
+# 2015 column is 'cropcatego' (no 'r'); 2020 is 'crops_2020'
+a15 <- a15 %>% rename(crop = cropcatego)
+a20 <- a20 %>% rename(crop = crops_2020)
+
+# aggregate by crop for each year
+df15 <- st_drop_geometry(a15) %>%
+  group_by(crop) %>%
+  summarise(area = sum(area_ha, na.rm = TRUE), .groups = "drop") %>%
+  mutate(year = "2015")
+
+df20 <- st_drop_geometry(a20) %>%
+  group_by(crop) %>%
+  summarise(area = sum(area_ha, na.rm = TRUE), .groups = "drop") %>%
+  mutate(year = "2020")
+
+df <- bind_rows(df15, df20)
+
+# simple side-by-side bar chart
+ggplot(df, aes(x = reorder(crop, area), y = area, fill = year)) +
+  geom_col(position = "dodge") +
+  coord_flip() +
+  labs(title = "Agricultural Area by Crop (2015 vs 2020)",
+       x = NULL, y = "Area (ha)", fill = NULL) +
+  theme_minimal(base_size = 14) +
+  theme(legend.position = "top")
+
+
+```
+
+```{r}
+library(tmap)
+library(leaflet)
+
+u15 <- st_buffer(st_union(ag15), 0)
+u20 <- st_buffer(st_union(ag20), 0)
+gain <- st_difference(u20, u15) |> st_make_valid() |> st_as_sf()
+loss <- st_difference(u15, u20) |> st_make_valid() |> st_as_sf()
+
+tmap_mode("plot")
+tm_shape(st_transform(gain, 4326)) + tm_fill("green", alpha = 0.5) + tm_borders() +
+tm_shape(st_transform(loss, 4326)) + tm_fill("red", alpha = 0.5) + tm_borders() +
+tm_layout(title = "Agriculture Gain (green) & Loss (red), 2015→2020", legend.show = FALSE)
+
+leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(data = st_transform(gain, 4326), color = "green", fillOpacity = 0.5) %>%
+  addPolygons(data = st_transform(loss, 4326), color = "red", fillOpacity = 0.5)
+
+```
