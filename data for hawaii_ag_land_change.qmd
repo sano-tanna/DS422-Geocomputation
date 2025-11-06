@@ -1,5 +1,6 @@
 ---
 title: "Code for Map"
+Author: Sano Tanna
 format: html
 editor: visual
 ---
@@ -44,42 +45,31 @@ print("2020 crop types:"); print(crops20)
 library(sf)
 library(dplyr)
 library(ggplot2)
+library(scales)
 
-# use your objects
-a15 <- ag15
-a20 <- ag20
+df <- bind_rows(
+  ag15 %>%
+    rename(crop = cropcatego) %>%
+    mutate(area_ha = as.numeric(st_area(.)) / 10000, year = "2015"),
+  ag20 %>%
+    rename(crop = crops_2020) %>%
+    mutate(area_ha = as.numeric(st_area(.)) / 10000, year = "2020")
+) %>%
+  st_drop_geometry() %>%
+  group_by(year, crop) %>%
+  summarise(area = sum(area_ha, na.rm = TRUE), .groups = "drop")
 
-# add area in hectares
-a15 <- a15 %>% mutate(area_ha = as.numeric(st_area(.)) / 10000)
-a20 <- a20 %>% mutate(area_ha = as.numeric(st_area(.)) / 10000)
-
-# rename crop columns to a common name to avoid typos
-# 2015 column is 'cropcatego' (no 'r'); 2020 is 'crops_2020'
-a15 <- a15 %>% rename(crop = cropcatego)
-a20 <- a20 %>% rename(crop = crops_2020)
-
-# aggregate by crop for each year
-df15 <- st_drop_geometry(a15) %>%
-  group_by(crop) %>%
-  summarise(area = sum(area_ha, na.rm = TRUE), .groups = "drop") %>%
-  mutate(year = "2015")
-
-df20 <- st_drop_geometry(a20) %>%
-  group_by(crop) %>%
-  summarise(area = sum(area_ha, na.rm = TRUE), .groups = "drop") %>%
-  mutate(year = "2020")
-
-df <- bind_rows(df15, df20)
-
-# simple side-by-side bar chart
+# Plot
 ggplot(df, aes(x = reorder(crop, area), y = area, fill = year)) +
   geom_col(position = "dodge") +
   coord_flip() +
-  labs(title = "Agricultural Area by Crop (2015 vs 2020)",
-       x = NULL, y = "Area (ha)", fill = NULL) +
+  labs(
+    title = "Agricultural Area by Crop (2015 vs 2020)",
+    x = NULL, y = "Area (ha)", fill = NULL
+  ) +
+  scale_y_continuous(labels = comma) +
   theme_minimal(base_size = 14) +
   theme(legend.position = "top")
-
 
 ```
 
